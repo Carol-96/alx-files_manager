@@ -12,6 +12,7 @@ export const getConnect = async (req, res) => {
       const b64String = authHeader.split(' ')[1];
       const bufferObj = Buffer.from(b64String, 'base64');
       const [email, password] = bufferObj.toString('utf8').split(':');
+      if (!email || !password) return res.sendStatus(400);
 
       const existingUser = await dbClient.db
         .collection('users')
@@ -44,6 +45,7 @@ export const getDisconnect = async (req, res) => {
 
     const tokenKey = `auth_${token}`;
     const _id = await redisClient.get(tokenKey);
+    if (!_id) return res.status(401).json({ error: 'Unauthorized' });
 
     const existingUser = await dbClient.db
       .collection('users')
@@ -65,6 +67,7 @@ export const getMe = async (req, res) => {
 
     const tokenKey = `auth_${token}`;
     const _id = await redisClient.get(tokenKey);
+    if (!_id) return res.status(401).json({ error: 'Unauthorized' });
     const existingUser = await dbClient.db
       .collection('users')
       .findOne({ _id: new ObjectId(_id) });
