@@ -16,9 +16,9 @@ const addUser = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ error: 'Already exist' });
     }
-    const hash = createHash('sha1');
-    const hashData = hash.update(password, 'utf-8');
-    const hashedPassword = hashData.digest('hex');
+    const hashedPassword = createHash('sha1')
+      .update(password, 'utf-8')
+      .digest('hex');
     const newUser = await dbClient.db
       .collection('users')
       .insertOne({ email, password: hashedPassword });
