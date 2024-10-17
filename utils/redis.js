@@ -1,63 +1,62 @@
-import { createClient } from 'redis';
 import { promisify } from 'util';
+import { createClient } from 'redis';
 
 /**
- * Class representing a Redis client.
+ * Represents a Redis client.
  */
 class RedisClient {
   /**
-   * Create a Redis client.
+   * Creates an  instance of RedisClient.
    */
   constructor() {
-    this.myClient = createClient();
-    this.myClient.on('error', (error) => console.log(error));
+    this.client = createClient();
+    this.clientConnected = true;
+    this.client.on('error', (err) => {
+      console.error('Redis client failed to connect:', err.message || err.toString());
+      this.clientConnected = false;
+    });
+    this.client.on('connect', () => {
+      this.clientConnected = true;
+    });
   }
 
   /**
-   * Check if the Redis client is alive.
-   * @returns {boolean} True if the client is connected, false otherwise.
+   * Checks if the client's connection to the Redis server is active.
+   * @returns {boolean}
    */
   isAlive() {
-    return this.myClient.connected;
+    return this.clientConnected;
   }
 
   /**
-   * Get the value of a key from Redis.
-   * @param {string} key - The key to retrieve.
-   * @returns {Promise<string>} The value of the key.
+   * Gets the Redis value of  akey.
+   * @param {String} key: The key of the item to retrieve.
+   * @returns {String | Object}
    */
   async get(key) {
-    const getAsync = promisify(this.myClient.GET).bind(this.myClient);
-    return getAsync(key);
+    return promisify(this.client.GET).bind(this.client)(key);
   }
 
   /**
-   * Set a key-value pair in Redis with an expiration time.
-   * @param {string} key - The key to set.
-   * @param {string} val - The value to set.
-   * @param {number} time - The expiration time in seconds.
-   * @returns {Promise<string>} The result of the set operation.
+   * Sets a key, its Redis value, and its expirtaion time.
+   * @param {String} key The key of the item to store.
+   * @param {String | Number | Boolean} value The item to store.
+   * @param {Number} duration The expiration time of the item in seconds.
+   * @returns {Promise<void>}
    */
-  async set(key, val, time) {
-    const setAsync = promisify(this.myClient.SET).bind(this.myClient);
-    return setAsync(key, val, 'EX', time);
+  async set(key, value, duration) {
+    await promisify(this.client.SETEX).bind(this.client)(key, duration, value);
   }
 
   /**
-   * Delete a key from Redis.
-   * @param {string} key - The key to delete.
-   * @returns {Promise<number>} The number of keys that were removed.
+   * Removes the value of a key in Redis.
+   * @param {String} key the key of the item to remove.
+   * @returns {Promise<void>}
    */
   async del(key) {
-    const delAsync = promisify(this.myClient.DEL).bind(this.myClient);
-    return delAsync(key);
+    await promisify(this.client.DEL).bind(this.client)(key);
   }
 }
 
-/**
- * An instance of the RedisClient.
- * @type {RedisClient}
- */
-const redisClient = new RedisClient();
-
-export default redisClient;
+export const client = new RedisClient();
+export default client;
